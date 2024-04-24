@@ -1,0 +1,64 @@
+#include <stdio.h>
+#include <winsock2.h>
+
+#pragma comment(lib, "ws2_32.lib")
+
+#define SERVER_ADDR "127.0.0.1"
+#define SERVER_PORT 8080
+
+int main() {
+    WSADATA wsaData;
+    SOCKET clientSocket;
+    struct sockaddr_in serverAddr;
+    char message[1024] = {0};
+    char buffer[1024] = {0};
+
+    // 初始化 Winsock
+    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
+        printf("WSAStartup failed\n");
+        return 1;
+    }
+
+    // 創建socket
+    if ((clientSocket = socket(AF_INET, SOCK_STREAM, 0)) == INVALID_SOCKET) {
+        printf("Socket creation failed\n");
+        return 1;
+    }
+
+    // 設定IP
+    serverAddr.sin_family = AF_INET;
+    serverAddr.sin_port = htons(SERVER_PORT);
+    serverAddr.sin_addr.s_addr = inet_addr(SERVER_ADDR);
+
+    // 連接伺服器
+    if (connect(clientSocket, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) < 0) {
+        printf("Connection failed\n");
+        return 1;
+    }
+
+    printf("Connected to server. Enter message (type 'exit' to quit):\n");
+
+    while (1) {
+
+        scanf("%s", message);
+
+        send(clientSocket, message, strlen(message), 0);
+        printf("Message sent: %s\n", message);
+
+        // 接收回覆
+        int valread = recv(clientSocket, buffer, sizeof(buffer), 0);
+        printf("Server: %s\n", buffer);
+
+        // exit if scanf 'exit'
+        if (strcmp(buffer, "exit") == 0)
+            break;
+
+        // 清空 buffer
+        memset(buffer, 0, sizeof(buffer));
+    }
+
+    closesocket(clientSocket);
+    WSACleanup();
+
+    return 0;
+}
